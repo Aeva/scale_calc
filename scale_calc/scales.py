@@ -1,13 +1,25 @@
 #!/usr/bin/python3
 
 import re
+from .notes import *
 
 
 # This will be prepopulated with common scales.  See "populate_common_scales" below.
 COMMON_SCALES = {}
 
 
+DIATONIC_MODE_NAMES = (
+    "Ionian",
+    "Dorian",
+    "Phrygian",
+    "Lydian",
+    "Mixolydian",
+    "Aeolian",
+    "Locrian")
+
+
 INTERVAL_PATTERN = re.compile(r"^[wh1-9]+$", re.I)
+DIATONIC_INTERVAL_PATTERN = re.compile(r"^2*12{2,3}12*$", re.I)
 
 
 def normalize_intervals(intervals):
@@ -70,12 +82,13 @@ class Scale:
     """
 
 
-    def __init__(self, pattern, name=None, tonic=None):
-        self.name = name
-        self.tonic = tonic
+    def __init__(self, pattern, tonic=None, name=None):
+        self.name = None
+        self.__tonic = None
 
-        if COMMON_SCALES.get(pattern):
-            pattern = COMMON_SCALES[pattern]
+        if type(pattern) is str and COMMON_SCALES.get(pattern.title()):
+            self.name = pattern.title()
+            pattern = COMMON_SCALES[pattern.title()]
 
         if type(pattern) is str:
             self.__keyboard = None
@@ -92,15 +105,21 @@ class Scale:
         elif type(pattern) is Scale:
             self.__keyboard = pattern.keyboard
             self.__intervals = None
+            self.__tonic = pattern.tonic
+            self.name = pattern.name
 
         else:
             raise TypeError("Malformed scale pattern.")
 
+        self.name = name or self.name
+        if type(tonic) in [int, str]:
+            self.tonic = tonic
+
 
     def __repr__(self):
         name = self.name or self.intervals
-        if self.tonic:
-            return "<{} {} Scale>".format(tonic, name)
+        if self.tonic is not None:
+            return "<{} {} Scale>".format(NOTE_NAMES[self.tonic], name)
         else:
             return "<{} Scale>".format(name)
 
@@ -119,6 +138,50 @@ class Scale:
             assert(self.__keyboard)
             self.__intervals = keyboard_to_intervals(self.__keyboard)
         return self.__intervals
+
+
+    @property
+    def tonic(self):
+        return self.__tonic
+
+
+    @tonic.setter
+    def tonic(self, val):
+        self.__tonic = note_num(val)
+
+
+    def has_tonic(self):
+        return self.__tonic != None
+
+
+    def is_n_tatonic(self, n):
+       """
+       Returns True if this scale has exactly "n" pitches per octave.
+       """
+       return self.keyboard[:12].count(1) == n
+
+
+    def is_pentatonic(self):
+       """
+       Returns True if this scale has exactly five pitches per octave.
+       """
+       return self.is_n_tatonic(5)
+
+
+    def is_heptatonic(self):
+       """
+       Returns True if this scale has exactly seven pitches per octave.
+       """
+       return self.is_n_tatonic(7)
+
+
+    def is_diatonic(self):
+       """
+       Returns True if this scale is heptatonic, has five whole steps, two half
+       steps, and the shortest distance between two adjacent half steps is two
+       whole stes.
+       """
+       return DIATONIC_INTERVAL_PATTERN.search(self.intervals) is not None
 
 
 def populate_common_scales():
@@ -151,7 +214,7 @@ def populate_common_scales():
         COMMON_SCALES[key] = alias
 
     for name, interval in COMMON_SCALES.items():
-        COMMON_SCALES[name] = Scale(interval, name)
+        COMMON_SCALES[name] = Scale(interval, name=name)
 
 
 populate_common_scales()
