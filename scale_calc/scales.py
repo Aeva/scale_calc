@@ -155,33 +155,33 @@ class Scale:
 
 
     def is_n_tatonic(self, n):
-       """
-       Returns True if this scale has exactly "n" pitches per octave.
-       """
-       return self.keyboard[:12].count(1) == n
+        """
+        Returns True if this scale has exactly "n" pitches per octave.
+        """
+        return self.keyboard[:12].count(1) == n
 
 
     def is_pentatonic(self):
-       """
-       Returns True if this scale has exactly five pitches per octave.
-       """
-       return self.is_n_tatonic(5)
+        """
+        Returns True if this scale has exactly five pitches per octave.
+        """
+        return self.is_n_tatonic(5)
 
 
     def is_heptatonic(self):
-       """
-       Returns True if this scale has exactly seven pitches per octave.
-       """
-       return self.is_n_tatonic(7)
+        """
+        Returns True if this scale has exactly seven pitches per octave.
+        """
+        return self.is_n_tatonic(7)
 
 
     def is_diatonic(self):
-       """
-       Returns True if this scale is heptatonic, has five whole steps, two half
-       steps, and the shortest distance between two adjacent half steps is two
-       whole stes.
-       """
-       return DIATONIC_INTERVAL_PATTERN.search(self.intervals) is not None
+        """
+        Returns True if this scale is heptatonic, has five whole steps, two half
+        steps, and the shortest distance between two adjacent half steps is two
+        whole stes.
+        """
+        return DIATONIC_INTERVAL_PATTERN.search(self.intervals) is not None
 
 
 def populate_common_scales():
