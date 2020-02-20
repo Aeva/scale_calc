@@ -117,11 +117,16 @@ class Scale:
 
 
     def __repr__(self):
+        return "<{} Scale>".format(self.nice_name)
+
+
+    @property
+    def nice_name(self):
         name = self.name or self.intervals
         if self.tonic is not None:
-            return "<{} {} Scale>".format(NOTE_NAMES[self.tonic], name)
+            return "{} {}".format(NOTE_NAMES[self.tonic], name)
         else:
-            return "<{} Scale>".format(name)
+            return "{}".format(name)
 
 
     @property

@@ -15,6 +15,17 @@ def rename_to_matching_mode(scale):
     return scale
 
 
+def rename_to_matching_scale(scale):
+    """
+    If the scale's interval pattern matches that of one of the common scales,
+    then rename the scale to that.
+    """
+    for name, reference_scale in COMMON_SCALES.items():
+        if scale.intervals == reference_scale.intervals:
+            return Scale(scale, name=name)
+    return scale
+
+
 def sharpen(scale, turns):
     """
     Rotate a scale some number of turns clockwise around the circle of fifths.
