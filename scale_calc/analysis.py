@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-from enum import Enum
+from .chords import *
 from .transforms import *
 
 
@@ -44,80 +44,6 @@ def spelling(scale, adjust_accidentals=True):
         return minimal
 
 
-class EInterval(Enum):
-    UNISON = 1
-    SECOND = 2
-    THIRD = 3
-    FOURTH = 4
-    FIFTH = 5
-    SIXTH = 6
-    SEVENTH = 7
-    OCTAVE = 8
-    UNKNOWN = 999
-
-
-class EQuality(Enum):
-    PERFECT = 1
-    MAJOR = 2
-    MINOR = 3
-    DIMINISHED = 4
-    AUGMENTED = 5
-    UNKNOWN = 6
-
-
-INTERVAL_MAP = {
-    EInterval.UNISON : {
-        0 : EQuality.PERFECT,
-        1 : EQuality.AUGMENTED,
-    },
-
-    EInterval.SECOND : {
-        0 : EQuality.DIMINISHED,
-        1 : EQuality.MINOR,
-        2 : EQuality.MAJOR,
-        3 : EQuality.AUGMENTED,
-    },
-
-    EInterval.THIRD : {
-        2 : EQuality.DIMINISHED,
-        3 : EQuality.MINOR,
-        4 : EQuality.MAJOR,
-        5 : EQuality.AUGMENTED,
-    },
-
-    EInterval.FOURTH : {
-        4 : EQuality.DIMINISHED,
-        5 : EQuality.PERFECT,
-        6 : EQuality.AUGMENTED,
-    },
-
-    EInterval.FIFTH : {
-        6 : EQuality.DIMINISHED,
-        7 : EQuality.PERFECT,
-        8 : EQuality.AUGMENTED,
-    },
-
-    EInterval.SIXTH : {
-        7 : EQuality.DIMINISHED,
-        8 : EQuality.MAJOR,
-        9 : EQuality.MINOR,
-        10 : EQuality.AUGMENTED,
-    },
-
-    EInterval.SEVENTH : {
-        9 : EQuality.DIMINISHED,
-        10 : EQuality.MAJOR,
-        11 : EQuality.MINOR,
-        12 : EQuality.AUGMENTED,
-    },
-
-    EInterval.OCTAVE : {
-        11 : EQuality.DIMINISHED,
-        12 : EQuality.PERFECT,
-    },
-}
-
-
 def degree_numeral(degree, quality):
     """
     For a given degree number and harmonic quality, generate the appropriate roman
@@ -148,58 +74,12 @@ def degree_numeral(degree, quality):
         return degree.upper() + "+"
 
 
-def degree_in_scale(note, scale):
-    """
-    For a given note, return the note's degree within the scale, or None if the note is
-    not in the scale.
-    """
-    if not scale.has_tonic():
-        raise ValueError("The scale must have the tonic set to determine a note's degree.")
-
-    notes = [note % 12 for note, state in enumerate(scale.keyboard[:-1], scale.tonic) if state]
-    try:
-        return notes.index(note_num(note)) + 1
-    except ValueError:
-        return None
-
-
-def interval_quality(low, high, scale=None, interval=None):
-    """
-    Attempt to determine the harmonic quality of a given interval.
-    """
-    dist = note_distance(low, high)
-    if interval:
-        quality = INTERVAL_MAP[interval].get(dist)
-        if quality:
-            return (quality, interval)
-
-    if scale:
-        low_degree = degree_in_scale(low, scale)
-        high_degree = degree_in_scale(high, scale)
-        if low_degree and high_degree:
-            interval = EInterval(abs(high_degree - low_degree) + 1)
-            qualities = INTERVAL_MAP[interval]
-            return (qualities.get(dist) or EQuality.UNKNOWN, interval)
-
-    # We don't know the scale degrees so we just have to guess.
-    guesses = []
-    for interval, qualities in INTERVAL_MAP.items():
-        quality = qualities.get(dist)
-        if quality:
-            guesses.append((quality, interval))
-    if guesses:
-        guesses.sort(key=lambda x: int(x[0].value))
-        return guesses[0]
-    return (EQuality.UNKNOWN, EInterval.UNKNOWN)
-
-
-def triad_quality(low, mid, high, scale=None):
+def triad_quality(root, third, fifth, scale=None):
     """
     Attempt to determine the harmonic quality of a triad.
     """
-    third1 = interval_quality(low, mid, scale, EInterval.THIRD)
-    third2 = interval_quality(mid, high, scale, EInterval.THIRD)
-    fifth = interval_quality(low, high, scale, EInterval.FIFTH)
+    third1 = interval_quality(root, third, scale, EInterval.THIRD)
+    third2 = interval_quality(third, fifth, scale, EInterval.THIRD)
     if third1[1] is EInterval.THIRD and third2[1] is EInterval.THIRD:
         if third1[0] is EQuality.MAJOR and third2[0] is EQuality.MINOR:
             return EQuality.MAJOR
