@@ -52,64 +52,70 @@ def degree_numeral(degree, quality):
     assert(type(degree) == int)
     assert(degree > 0)
 
-    if quality in [EQuality.UNKNOWN, EQuality.PERFECT]:
+    if quality == "Unknown":
         return str(degree) + "?"
 
-    major = ""
-    minor = ""
     try:
         degree = NUMERALS[degree-1]
     except IndexError:
         degree = str(degree)
-        major = "M"
-        minor = "m"
 
-    if quality is EQuality.MINOR:
-        return degree + minor
-    elif quality is EQuality.DIMINISHED:
-        return degree + "*"
-    elif quality is EQuality.MAJOR:
-        return degree.upper() + major
-    elif quality is EQuality.AUGMENTED:
+    if quality == "Minor":
+        return degree.lower()
+
+    elif quality == "Major":
+        return degree.upper()
+
+    elif quality == "Diminished":
+        return degree.lower() + "*"
+
+    elif quality == "Augmented":
         return degree.upper() + "+"
 
 
-def triad_quality(root, third, fifth, scale=None):
+def triad_quality(keyboard):
     """
     Attempt to determine the harmonic quality of a triad.
     """
-    third1 = interval_quality(root, third, scale, EInterval.THIRD)
-    third2 = interval_quality(third, fifth, scale, EInterval.THIRD)
-    if third1[1] is EInterval.THIRD and third2[1] is EInterval.THIRD:
-        if third1[0] is EQuality.MAJOR and third2[0] is EQuality.MINOR:
-            return EQuality.MAJOR
-        elif third1[0] is EQuality.MINOR and third2[0] is EQuality.MAJOR:
-            return EQuality.MINOR
-        elif third1[0] is EQuality.MINOR and third2[0] is EQuality.MINOR:
-            return EQuality.DIMINISHED
-        elif third1[0] is EQuality.MAJOR and third2[0] is EQuality.MAJOR:
-            return EQuality.AUGMENTED
-    return EQuality.UNKNOWN
+    def fnord(quality):
+        chord = Chord(quality + " 5th")
+        cmp = compare_chords(chord, keyboard)[0]
+        return (cmp, quality)
+    qualities = ("Diminished", "Minor", "Major", "Augmented")
+    cmp, quality = sorted(map(fnord, qualities), key=lambda x: x[0])[-1]
+    if cmp == 1.0:
+        return quality
+    else:
+        return "Unknown"
 
 
 def scale_degree_qualities(scale):
     """
     For a given scale, return the list of harmonic qualities for the scale's degrees.
     """
-    if not scale.has_tonic():
-        # Doesn't matter
-        scale = Scale(scale, tonic="C")
-    notes = [note % 12 for note, state in enumerate(scale.keyboard[:-1], scale.tonic) if state]
-    qualities = []
-    for i in range(len(notes)):
-        low = notes[i]
-        med = notes[(i + 2) % len(notes)]
-        high = notes[(i + 4) % len(notes)]
-        qualities.append(triad_quality(low, med, high, scale))
-    return qualities
+    extended = scale.keyboard[:-1] + scale.keyboard[:-1]
+    keyboards = [extended[i:] for i, state in enumerate(scale.keyboard[:-1]) if state]
+    return map(triad_quality, scale.degree_keyboards())
+
+
+def find_chords(scale):
+    """
+    Returns the set of all of the common chords in the given scale.
+    """
+    degrees = zip(spelling(scale), scale.degree_keyboards())
+    chords = set()
+    for root, keyboard in degrees:
+        extend = keyboard * 2
+        for name, chord in COMMON_CHORDS.items():
+            if compare_chords(chord, extend)[0] == 1.0:
+                chords.add(Chord(chord, name=name, root=root))
+    return chords
 
 
 def pretty_print(scale):
+    """
+    Prints a nice description of the given scale.
+    """
     if not scale.has_tonic():
         # Doesn't matter
         scale = Scale(scale, tonic="C")

@@ -189,6 +189,35 @@ class Scale:
         return DIATONIC_INTERVAL_PATTERN.search(self.intervals) is not None
 
 
+    def notes(self):
+        """
+        Return the list of notes in this scale.  Requires that the tonic be set.
+        """
+        if not self.has_tonic():
+            raise ValueError("The scale must have the tonic set to do this.")
+        return [note % 12 for note, state in enumerate(self.keyboard[:-1], scale.tonic) if state]
+
+
+    def degree(self, note):
+        """
+        For a given note, return the note's degree within this scale, or None if the note is
+        not in this scale.
+        """
+        try:
+            return self.notes().index(note_num(note)) + 1
+        except ValueError:
+            return None
+
+
+    def degree_keyboards(self):
+        """
+        Returns a tuple of keyboard tuples for each degree of the scale where the
+        keyboard is rooted on that degree.  The root is not repeated.
+        """
+        smol = self.keyboard[:-1]
+        return [smol[i:] + smol[:i] for i, state in enumerate(smol) if state]
+
+
 def populate_common_scales():
     assert(not COMMON_SCALES)
     params = (
